@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="menu">
+    <a href="index.html">Início</a>
+    <a href="#">Top Peças</a>
+    <a href="cadastro.html" class="ativo">Cadastrar</a>
+    <a href="#">Login</a>
+  </header>
+
+  <div class="cadastro-container">
+    <h2>Cadastro</h2>
+    <form id="formCadastro">
+      <input type="text" id="primeiroNome" placeholder="Primeiro Nome" required>
+      <input type="text" id="segundoNome" placeholder="Segundo Nome" required>
+      <input type="text" id="apelido" placeholder="Apelido" required>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="senha" placeholder="Senha" required>
+      <input type="password" id="confirmarSenha" placeholder="Confirmar Senha" required>
+
+      <label>
+        <input type="checkbox" id="termos"> Aceito os termos de serviço
+      </label>
+
+      <button type="submit">Cadastrar</button>
+      <p id="mensagem" style="color: red; margin-top: 10px;"></p>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('formCadastro');
+    const msg = document.getElementById('mensagem');
+
+    function getUsuarios() {
+      return JSON.parse(localStorage.getItem('usuarios')) || [];
+    }
+
+    function salvarUsuario(usuario) {
+      const usuarios = getUsuarios();
+      usuarios.push(usuario);
+      localStorage.setItem('usuarios', JSON.stringify(usuarios));
+    }
+
+    function sha256(str) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(str);
+      return crypto.subtle.digest('SHA-256', data).then(buf => {
+        return Array.from(new Uint8Array(buf))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      });
+    }
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      msg.textContent = "";
+
+      const primeiroNome = form.primeiroNome.value.trim();
+      const segundoNome = form.segundoNome.value.trim();
+      const apelido = form.apelido.value.trim();
+      const email = form.email.value.trim();
+      const senha = form.senha.value;
+      const confirmarSenha = form.confirmarSenha.value;
+      const termos = document.getElementById('termos').checked;
+
+      const usuarios = getUsuarios();
+
+      if (usuarios.find(u => u.primeiroNome === primeiroNome)) {
+        msg.textContent = "Esse nome já está sendo usado";
+        return;
+      }
+
+      if (usuarios.find(u => u.apelido === apelido)) {
+        msg.textContent = "Esse apelido já existe";
+        return;
+      }
+
+      if (usuarios.find(u => u.email === email)) {
+        msg.textContent = "Já tem um usuário usando esse E-mail";
+        return;
+      }
+
+      if (senha !== confirmarSenha) {
+        msg.textContent = "As senhas não coincidem";
+        return;
+      }
+
+      if (!termos) {
+        msg.textContent = "Você deve aceitar os termos de serviço";
+        return;
+      }
+
+      const senhaHash = await sha256(senha);
+
+      const novoUsuario = {
+        primeiroNome,
+        segundoNome,
+        apelido,
+        email,
+        senha: senhaHash
+      };
+
+      salvarUsuario(novoUsuario);
+      msg.style.color = "green";
+      msg.textContent = "Cadastro realizado com sucesso!";
+      form.reset();
+    });
+  </script>
+
+</body>
+</html>
