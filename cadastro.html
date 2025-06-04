@@ -10,7 +10,6 @@
       margin: 0;
     }
 
-    /* Menu */
     nav {
       background-color: #2d6b2d;
       padding: 10px;
@@ -28,7 +27,6 @@
       text-decoration: underline;
     }
 
-    /* Formulário centralizado */
     .container {
       display: flex;
       justify-content: center;
@@ -44,6 +42,8 @@
       padding: 30px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
     }
 
     .row {
@@ -61,6 +61,7 @@
     .terms {
       display: flex;
       align-items: center;
+      gap: 5px;
     }
 
     .success {
@@ -103,21 +104,74 @@
   </div>
 
   <script>
-    document.getElementById('cadastroForm').addEventListener('submit', function (e) {
+    function hashSHA256(text) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+        return Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      });
+    }
+
+    document.getElementById('cadastroForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const termos = document.getElementById('termos');
+
+      const primeiroNome = document.getElementById('primeiroNome').value.trim().toLowerCase();
+      const segundoNome = document.getElementById('segundoNome').value.trim();
+      const apelido = document.getElementById('apelido').value.trim().toLowerCase();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const senha = document.getElementById('senha').value;
+      const confirmarSenha = document.getElementById('confirmarSenha').value;
+      const termos = document.getElementById('termos').checked;
       const mensagem = document.getElementById('mensagem');
 
-      if (!termos.checked) {
+      mensagem.textContent = '';
+      mensagem.className = '';
+
+      if (!termos) {
         mensagem.textContent = 'Você precisa aceitar os termos de serviço para se cadastrar.';
         mensagem.className = 'error';
         return;
       }
 
+      if (senha !== confirmarSenha) {
+        mensagem.textContent = 'As senhas não coincidem.';
+        mensagem.className = 'error';
+        return;
+      }
+
+      let usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+
+      const duplicado = usuarios.find(user =>
+        user.apelido === apelido ||
+        user.email === email ||
+        user.primeiroNome === primeiroNome
+      );
+
+      if (duplicado) {
+        mensagem.textContent = 'Apelido, primeiro nome ou email já cadastrado. Tente outro.';
+        mensagem.className = 'error';
+        return;
+      }
+
+      const senhaHash = await hashSHA256(senha);
+
+      const novoUsuario = {
+        primeiroNome,
+        segundoNome,
+        apelido,
+        email,
+        senha: senhaHash
+      };
+
+      usuarios.push(novoUsuario);
+      localStorage.setItem('usuarios', JSON.stringify(usuarios));
+
       mensagem.textContent = 'Cadastro realizado com sucesso!';
       mensagem.className = 'success';
 
-      // Aqui você pode salvar os dados no LocalStorage como antes
+      document.getElementById('cadastroForm').reset();
     });
   </script>
 </body>
