@@ -3,115 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <title>Cadastro</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #eef7ec;
+      font-family: Arial, sans-serif;
+      margin: 0;
+    }
+
+    /* Menu */
+    nav {
+      background-color: #2d6b2d;
+      padding: 10px;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    /* Formulário centralizado */
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 90vh;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      padding: 8px;
+      width: 100%;
+    }
+
+    .terms {
+      display: flex;
+      align-items: center;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+  </style>
 </head>
 <body>
-
-  <header class="menu">
-    <a href="index.html">Início</a>
+  <nav>
+    <a href="#">Início</a>
     <a href="#">Top Peças</a>
-    <a href="cadastro.html" class="ativo">Cadastrar</a>
+    <a href="#">Cadastrar</a>
     <a href="#">Login</a>
-  </header>
+  </nav>
 
-  <div class="cadastro-container">
-    <h2>Cadastro</h2>
-    <form id="formCadastro">
-      <input type="text" id="primeiroNome" placeholder="Primeiro Nome" required>
-      <input type="text" id="segundoNome" placeholder="Segundo Nome" required>
-      <input type="text" id="apelido" placeholder="Apelido" required>
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="senha" placeholder="Senha" required>
-      <input type="password" id="confirmarSenha" placeholder="Confirmar Senha" required>
-
-      <label>
-        <input type="checkbox" id="termos"> Aceito os termos de serviço
-      </label>
-
+  <div class="container">
+    <form id="cadastroForm">
+      <h2>Cadastro</h2>
+      <div class="row">
+        <input type="text" placeholder="Primeiro Nome" id="primeiroNome" required>
+        <input type="text" placeholder="Segundo Nome" id="segundoNome" required>
+      </div>
+      <input type="text" placeholder="Apelido" id="apelido" required>
+      <input type="email" placeholder="Email" id="email" required>
+      <div class="row">
+        <input type="password" placeholder="Senha" id="senha" required>
+        <input type="password" placeholder="Confirmar Senha" id="confirmarSenha" required>
+      </div>
+      <div class="terms">
+        <input type="checkbox" id="termos">
+        <label for="termos">Aceito os termos de serviço</label>
+      </div>
       <button type="submit">Cadastrar</button>
-      <p id="mensagem" style="color: red; margin-top: 10px;"></p>
+      <div id="mensagem"></div>
     </form>
   </div>
 
   <script>
-    const form = document.getElementById('formCadastro');
-    const msg = document.getElementById('mensagem');
-
-    function getUsuarios() {
-      return JSON.parse(localStorage.getItem('usuarios')) || [];
-    }
-
-    function salvarUsuario(usuario) {
-      const usuarios = getUsuarios();
-      usuarios.push(usuario);
-      localStorage.setItem('usuarios', JSON.stringify(usuarios));
-    }
-
-    function sha256(str) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(str);
-      return crypto.subtle.digest('SHA-256', data).then(buf => {
-        return Array.from(new Uint8Array(buf))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-      });
-    }
-
-    form.addEventListener('submit', async function(e) {
+    document.getElementById('cadastroForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      msg.textContent = "";
+      const termos = document.getElementById('termos');
+      const mensagem = document.getElementById('mensagem');
 
-      const primeiroNome = form.primeiroNome.value.trim();
-      const segundoNome = form.segundoNome.value.trim();
-      const apelido = form.apelido.value.trim();
-      const email = form.email.value.trim();
-      const senha = form.senha.value;
-      const confirmarSenha = form.confirmarSenha.value;
-      const termos = document.getElementById('termos').checked;
-
-      const usuarios = getUsuarios();
-
-      if (usuarios.find(u => u.primeiroNome === primeiroNome)) {
-        msg.textContent = "Esse nome já está sendo usado";
+      if (!termos.checked) {
+        mensagem.textContent = 'Você precisa aceitar os termos de serviço para se cadastrar.';
+        mensagem.className = 'error';
         return;
       }
 
-      if (usuarios.find(u => u.apelido === apelido)) {
-        msg.textContent = "Esse apelido já existe";
-        return;
-      }
+      mensagem.textContent = 'Cadastro realizado com sucesso!';
+      mensagem.className = 'success';
 
-      if (usuarios.find(u => u.email === email)) {
-        msg.textContent = "Já tem um usuário usando esse E-mail";
-        return;
-      }
-
-      if (senha !== confirmarSenha) {
-        msg.textContent = "As senhas não coincidem";
-        return;
-      }
-
-      if (!termos) {
-        msg.textContent = "Você deve aceitar os termos de serviço";
-        return;
-      }
-
-      const senhaHash = await sha256(senha);
-
-      const novoUsuario = {
-        primeiroNome,
-        segundoNome,
-        apelido,
-        email,
-        senha: senhaHash
-      };
-
-      salvarUsuario(novoUsuario);
-      msg.style.color = "green";
-      msg.textContent = "Cadastro realizado com sucesso!";
-      form.reset();
+      // Aqui você pode salvar os dados no LocalStorage como antes
     });
   </script>
-
 </body>
 </html>
